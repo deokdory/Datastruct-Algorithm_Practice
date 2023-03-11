@@ -130,6 +130,11 @@ int main()
 
     auto sll2 = sll; // 복사 생성자 호출
 
+    auto it = sll.begin();
+    for(it; it != sll.end(); it++) {
+        std::cout << *it;
+    }
+
     sll2.push_front(-1);
     std::cout << "첫 번째 리스트를 복사한 후, 맨 앞에 -1을 추가: ";
     for(const auto& i : sll2)

@@ -4,6 +4,7 @@
         "xstring": "cpp",
         "xutility": "cpp",
         "xmemory": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "initializer_list": "cpp"
     }
 }
