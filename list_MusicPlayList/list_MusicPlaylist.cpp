@@ -1,25 +1,25 @@
 #include <iostream>
 #include <algorithm>
 
-struct MusicNode
+struct Node
 {
     std::string song_name;
-    MusicNode *prev;
-    MusicNode *next;
+    Node *prev;
+    Node *next;
 };
 
-class MusicPlaylist
+class DoublyLinkedList
 {
 private:
-    using node = MusicNode;
+    using node = Node;
     using node_ptr = node *;
 
 public:
     node_ptr head;
     node_ptr tail;
     node_ptr playing;
-    // 맨 뒤에 노래 삽입
-    void PushBack(std::string song_name)
+    
+    void push_back(std::string song_name)
     {
         auto new_node = new node{song_name, nullptr, nullptr};
         if (head == nullptr)
@@ -35,7 +35,7 @@ public:
     }
 
     // 맨 뒤 노래 삭제
-    void PopBack()
+    void pop_back()
     {
         auto last = tail;
 
@@ -47,106 +47,87 @@ public:
         delete last;
     }
 
-    void Play()
+    void remove(std::string _song_name)
     {
         if(head) {
-            if (playing == nullptr)
-                playing = head;
-        }
-        std::cout << playing->song_name << std::endl;
-    }
-
-    void Next()
-    {
-        if (playing)
-        {
-            if (playing->next)
-                playing = playing->next;
-            else
-                playing = head;
-        }
-        else
-            return;
-        std::cout << playing->song_name << std::endl;
-    }
-
-    void Prev()
-    {
-        if (playing)
-        {
-            if (playing->prev)
-                playing = playing->prev;
-            else
-                playing = tail;
-        }
-        else
-            return;
-        std::cout << playing->song_name << std::endl;
-    }
-
-    void Stop()
-    {
-        if (playing) {
-            playing == nullptr;
-            std::cout << "STOPED" << std::endl;
+            auto it = begin();
+            for (it; it != end(); it++)
+            {
+                if(*it == _song_name) {
+                    auto node = it.Get();
+                    if(node == head) {
+                        head->next->prev = nullptr;
+                        head = head->next;
+                        if(playing) playing = nullptr;
+                    } else {
+                        if(node != tail) {
+                            node->next->prev = node->prev;
+                        }
+                        node->prev->next = node->next;
+                        if(playing) playing = node->next;
+                    }
+                    delete node;
+                    return;
+                }
+            }
         }
     }
 
     // 반복자 생성
-    struct MusicPlaylistIterator
+    struct DoublyLinkedListIterator
     {
     private:
         node_ptr ptr;
 
     public:
-        MusicPlaylistIterator(node_ptr p) : ptr(p) {}
+        DoublyLinkedListIterator(node_ptr p) : ptr(p) {}
 
         std::string &operator*() { return ptr->song_name; }
         node_ptr Get() { return ptr; }
 
-        MusicPlaylistIterator &operator++()
+        DoublyLinkedListIterator &operator++()
         {
             ptr = ptr->next;
             return *this;
         }
 
-        MusicPlaylistIterator operator++(int)
+        DoublyLinkedListIterator operator++(int)
         {
             auto result = *this;
             ++(*this);
             return result;
         }
 
-        MusicPlaylistIterator &operator--()
+        DoublyLinkedListIterator &operator--()
         {
             ptr = ptr->prev;
             return *this;
         }
-        MusicPlaylistIterator operator--(int)
+        DoublyLinkedListIterator operator--(int)
         {
             auto result = *this;
             --(*this);
             return result;
         }
 
-        friend bool operator==(MusicPlaylistIterator left, MusicPlaylistIterator right)
+        friend bool operator==(DoublyLinkedListIterator left, DoublyLinkedListIterator right)
         {
             return left.ptr == right.ptr;
         }
 
-        friend bool operator!=(MusicPlaylistIterator left, MusicPlaylistIterator right)
+        friend bool operator!=(DoublyLinkedListIterator left, DoublyLinkedListIterator right)
         {
             return left.ptr != right.ptr;
         }
     };
 
-    MusicPlaylistIterator begin() { return MusicPlaylistIterator(head); }
-    MusicPlaylistIterator begin() const { return MusicPlaylistIterator(head); }
-    MusicPlaylistIterator end() { return MusicPlaylistIterator(nullptr); }
-    MusicPlaylistIterator end() const { return MusicPlaylistIterator(nullptr); }
+    DoublyLinkedListIterator begin() { return DoublyLinkedListIterator(head); }
+    DoublyLinkedListIterator begin() const { return DoublyLinkedListIterator(head); }
+    DoublyLinkedListIterator end() { return DoublyLinkedListIterator(nullptr); }
+    DoublyLinkedListIterator end() const { return DoublyLinkedListIterator(nullptr); }
 
-    MusicPlaylist() = default;
-    MusicPlaylist(const MusicPlaylist &other) : head(nullptr), tail(nullptr), playing(nullptr)
+    DoublyLinkedList() = default;
+    DoublyLinkedList(const DoublyLinkedList &other) : head(nullptr), tail(nullptr), playing(nullptr)
     {
         if (other.head)
         {
@@ -171,24 +152,97 @@ public:
             }
         }
     }
-    MusicPlaylist(const std::initializer_list<std::string> &ilist) : head(nullptr), tail(nullptr), playing(nullptr)
+    DoublyLinkedList(const std::initializer_list<std::string> &ilist) : head(nullptr), tail(nullptr), playing(nullptr)
     {
         auto it = ilist.begin();
         for (it; it != ilist.end(); it++)
         {
-            PushBack(*it);
+            push_back(*it);
         }
     }
 };
 
+struct Playlist {
+    private:
+        DoublyLinkedList* list;
+    public:
+        Playlist(DoublyLinkedList _list) {
+            list = new DoublyLinkedList();
+        }
+        Playlist(const std::initializer_list<std::string> &ilist) {
+            list = new DoublyLinkedList(ilist);
+        }
+
+        void new_song(std::string name)
+        {
+            list->push_back(name);
+        }
+
+    void play()
+    {
+        if(list->head) {
+            if (list->playing == nullptr)
+                list->playing = list->head;
+        }
+        std::cout << list->playing->song_name << std::endl;
+    }
+
+    void next()
+    {
+        if (list->playing)
+        {
+            if (list->playing->next)
+                list->playing = list->playing->next;
+            else
+                list->playing = list->head;
+        }
+        else
+            return;
+        std::cout << list->playing->song_name << std::endl;
+    }
+
+    void prev()
+    {
+        if (list->playing)
+        {
+            if (list->playing->prev)
+                list->playing = list->playing->prev;
+            else
+                list->playing = list->tail;
+        }
+        else
+            return;
+        std::cout << list->playing->song_name << std::endl;
+    }
+
+    void stop()
+    {
+        if (list->playing) {
+            list->playing == nullptr;
+            std::cout << "STOPED" << std::endl;
+        }
+    }
+
+    void remove(std::string name)
+    {
+        list->remove(name);
+    }
+
+};
+
 int main()
 {
-
-    MusicPlaylist base = {"1번곡", "2번곡", "3번곡"};
-    base.Play();
-    base.Prev();
-    base.Next();
-    base.Next();
+    Playlist playlist = {"Hi", "Hello", "World"};
+    playlist.play();
+    playlist.next();
+    playlist.prev();
+    playlist.prev();
+    playlist.remove("Hi");
+    playlist.remove("World");
+    playlist.play();
+    playlist.stop();
+    playlist.play();
+    
     return 0;
 }
 
