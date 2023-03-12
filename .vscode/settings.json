@@ -42,7 +42,11 @@
         "xlocinfo": "cpp",
         "xlocnum": "cpp",
         "xstddef": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "list": "cpp",
+        "array": "cpp",
+        "forward_list": "cpp",
+        "vector": "cpp"
     },
     "C_Cpp.clang_format_fallbackStyle": "Google"
 }
