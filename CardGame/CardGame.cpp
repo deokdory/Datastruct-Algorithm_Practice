@@ -1,40 +1,31 @@
-#include <time.h>
-
-#include <algorithm>
-#include <array>
-#include <forward_list>
 #include <iostream>
-#include <list>
 #include <string>
 #include <vector>
+#include <array>
+#include <algorithm>
+#include <random>
+#include <chrono>
 
 #define CARD_TOTAL 52
 #define SHUFFLE_COUNT 200
 
 #define STARTING_CARDS 13
 
-enum Pattern {
-  Spade = 0,
-  Diamond,
-  Clover,
-  Heart,
-};
-
 enum CardNum { J = 11, Q, K };
 
 struct Card {
-  int pattern;
   int number;
+  enum Pattern { SPADE = 0, DIAMOND, CLOVER, HEART } pattern;
 
   std::string GetPattern() const {
     switch (pattern) {
-      case Spade:
+      case SPADE:
         return "♠";
-      case Diamond:
+      case DIAMOND:
         return "◆";
-      case Clover:
+      case CLOVER:
         return "♣";
-      case Heart:
+      case HEART:
         return "♥";
       default:
         return "?";
@@ -55,219 +46,107 @@ struct Card {
         return std::to_string(number);
     }
   }
+
   friend std::ostream& operator<<(std::ostream& out, const Card& card) {
     out << card.GetPattern() << card.GetNumber();
     return out;
   }
-
-  friend bool operator==(Card left, Card right) {
-    return left.number == right.number && left.pattern == right.pattern;
-  }
-  friend bool operator!=(Card left, Card right) {
-    return left.number != right.number || left.pattern != right.pattern;
-  }
-};
-
-struct Deck {
- private:
-  std::string name;
-  std::list<Card> deck;
-  std::list<Card> hand;
-  int hand_count = 0;
-
- public:
-  Deck() = default;
-  Deck(std::string name) : name(name) {}
-  Deck(const Deck& other) {
-    name = other.name;
-    deck = other.deck;
-    hand = other.hand;
-    hand_count = other.hand_count;
-  }
-
-  std::string GetName() const { return name; }
-  int GetHandCount() const { return hand_count; }
-  std::list<Card>* GetHand() { return &hand; }
-
-  void SetName(std::string _name) { name = _name; }
-  void DecreaseHandCount() { hand_count--; }
-  // 카드 덱 초기화
-  void InitDeck() {
-    Card* card = nullptr;
-    for (int i = 0; i < 4; i++) {
-      int pattern = i;
-      for (int j = 1; j <= 13; j++) {
-        card = new Card{i, j};
-        deck.push_back(*card);
-      }
-    }
-  }
-
-  void Shuffle() {
-    std::vector<Card> shuffler(deck.size());
-    for (const auto& i : deck) {
-      shuffler.push_back(i);
-    }
-    int a, b;
-    for (int i = 0; i < SHUFFLE_COUNT; i++) {
-      a = rand() % CARD_TOTAL;
-      b = rand() % CARD_TOTAL;
-      std::swap(shuffler[a], shuffler[b]);
-    }
-    deck.clear();
-    for (const auto& i : shuffler) {
-      deck.push_back(i);
-    }
-  }
-
-  void Hand(int num_of_cards) {
-    if (num_of_cards <= deck.size()) {
-      auto rit = deck.rbegin();
-      for (int i = 0; i < num_of_cards; i++) {
-        hand.push_back(*rit);
-        hand_count++;
-        rit++;
-        deck.pop_back();
-      }
-    }
-  }
-
-  void ReturnHand() {
-    if (!hand.empty()) {
-      auto rit = hand.rbegin();
-      for (rit; rit != hand.rend(); rit++) {
-        deck.push_front(*rit);
-        rit++;
-        hand.pop_back();
-      }
-      hand_count = 0;
-    }
-  }
-
-  Card* DrawOnHand() {
-    int d = rand() % hand.size();
-    auto it = hand.begin();
-    for (int i = 0; i < d; i++) {
-      it++;
-    }
-    return &(*it);
-  }
 };
 
 struct Game {
- public:
-  using deck_vector = std::vector<Deck>;
+  std::array<Card, 52> deck;
+  std::vector<Card> player1, player2, player3, player4;
 
- private:
-  deck_vector player;
-  std::forward_list<Deck*> winners;
-
- public:
-  Game() {
-    Deck* tmp;
-    std::string name;
-    for (int i = 0; i < 4; i++) {
-      name = "Player";
-      tmp = new Deck(name);
-      player.push_back(*tmp);
+  void InitDeck() {
+    for (int i = 0; i < 13; i++) {
+      deck[i] = Card{i + 1, Card::HEART};
+    }
+    for (int i = 0; i < 13; i++) {
+      deck[i + 13] = Card{i + 1, Card::SPADE};
+    }
+    for (int i = 0; i < 13; i++) {
+      deck[i + 26] = Card{i + 1, Card::CLOVER};
+    }
+    for (int i = 0; i < 13; i++) {
+      deck[i + 39] = Card{i + 1, Card::DIAMOND};
     }
   }
 
-  Game(const std::initializer_list<std::string>& ilist) {
-    auto it = ilist.begin();
-    std::string name;
-    for (int i = 0; i < 4; i++) {
-      if (it != ilist.end()) {
-        name = *it;
-        it++;
-      } else {
-        name = "Player" + (i + 1);
-      }
-      player[i].SetName(name);
-    }
+  void DivideDeck() {
+    //srand((unsigned)time(NULL));
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(deck.begin(), deck.end(), std::default_random_engine(seed));
+    player1 = {deck.begin(), deck.begin() + 13};
+    player2 = {deck.begin() + 13, deck.begin() + 26};
+    player3 = {deck.begin() + 26, deck.begin() + 39};
+    player4 = {deck.begin() + 39, deck.end()};
   }
 
-  deck_vector GetPlayer() { return player; }
-
-  void Init() {
-    for (auto& i : player) {
-      i.InitDeck();
-      i.Hand(STARTING_CARDS);
-    }
-  }
-
-  void CheckPair() {
-    std::array<Card*, 4> drawn_card = {};
-    std::array<bool, 4> paired = {};
-    auto it = player.begin();
-    for (int i = 0; i < 4; i++) {
-      drawn_card[i] = it->DrawOnHand();
-      std::cout << it->GetName() << "이(가) 선택한 카드: " << *drawn_card[i] << std::endl;
-    }
-    for (int i = 0; i < 4; i++) {
-      for (int j = i + 1; j < 4; j++) {
-        if (drawn_card[i] != nullptr && drawn_card[j] != nullptr) {
-          if (drawn_card[i] == drawn_card[j]) {
-            player[i].GetHand()->remove(*drawn_card[i]);
-            player[j].GetHand()->remove(*drawn_card[j]);
-
-            player[i].DecreaseHandCount();
-            player[j].DecreaseHandCount();
-
-            paired[i] = paired[j] = true;
-
-            drawn_card[i] = drawn_card[j] = nullptr;
-            break;
-          }
-        }
-      }
-    }
-    for (int i = 0; i < 4; i++) {
-      if (paired[i] == false) {
-        int hand_count = player[i].GetHandCount();
-        player[i].ReturnHand();
-        player[i].Shuffle();
-        player[i].Hand(hand_count);
-      }
-    }
-  }
-
-  void Round() {
-    std::rotate(player.begin(), player.begin() + 1, player.end());
-  }
-
-  bool CheckWinner() {
-    auto it = player.begin();
-    for (int i = 0; i < 4; i++) {
-      if (it->GetHandCount() == 0) 
-      winners.push_front(&(*it));
-    }
-    if (!winners.empty()) {
-      std::cout << "Winners: ";
-      for (auto i : winners) {
-        std::cout << i->GetName() << " ";
-      }
+  bool CompareAndRemove(std::vector<Card>& p1, std::vector<Card>& p2) {
+    if (p1.back().number == p2.back().number) {
+      p1.pop_back();
+      p2.pop_back();
       return true;
     }
     return false;
   }
+
+  void PlayOneRound() {
+    std::cout << "player1 card: " << player1.back() << std::endl;
+    std::cout << "player2 card: " << player2.back() << std::endl;
+    std::cout << "player3 card: " << player3.back() << std::endl;
+    std::cout << "player4 card: " << player4.back() << std::endl;
+
+    if (CompareAndRemove(player1, player2)) {
+      CompareAndRemove(player3, player4);
+      return;
+    } else if (CompareAndRemove(player1, player3)) {
+      CompareAndRemove(player2, player4);
+      return;
+    } else if (CompareAndRemove(player1, player4)) {
+      CompareAndRemove(player2, player3);
+      return;
+    } else if (CompareAndRemove(player2, player3)) {
+      return;
+    } else if (CompareAndRemove(player2, player4)) {
+      return;
+    } else if (CompareAndRemove(player3, player4)) {
+      return;
+    }
+   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(player1.begin(), player1.end(), std::default_random_engine(seed));
+    std::shuffle(player2.begin(), player2.end(), std::default_random_engine(seed));
+    std::shuffle(player3.begin(), player3.end(), std::default_random_engine(seed));
+    std::shuffle(player4.begin(), player4.end(), std::default_random_engine(seed));
+  }
+
+  bool IsGameCompleted() const {
+    return player1.empty() || player2.empty() || player3.empty() ||
+           player4.empty();
+  }
+
+  void PlayGame() {
+    while (IsGameCompleted() == false) {
+      PlayOneRound();
+    }
+  }
+
+  int GetWinner() const {
+    if (player1.empty()) return 1;
+    if (player2.empty()) return 2;
+    if (player3.empty()) return 3;
+    if (player4.empty()) return 4;
+  }
+
 };
 
 int main() {
-  srand((unsigned)time(NULL));
+  Game newGame;
+  newGame.InitDeck();
+  newGame.DivideDeck();
+  newGame.PlayGame();
+  auto winner = newGame.GetWinner();
+  std::cout << "player" << winner << " is winner!" << std::endl;
 
-  Game game;
-
-  game.Init();
-
-  while (true) {
-    if (game.CheckWinner()) break;
-
-    for (auto i : game.GetPlayer()) {
-      std::cout << i.GetName() << " | 손에 남은 카드 수:" << i.GetHandCount()
-                << std::endl;
-    }
-    game.CheckPair();
-    game.Round();
-  }
+  return 0;
 }
